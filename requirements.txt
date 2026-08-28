@@ -1,0 +1,11 @@
+accelerate
+diffusers
+fastapi
+huggingface_hub
+Pillow
+protobuf
+pydantic
+safetensors
+sentencepiece
+transformers
+uvicorn[standard]

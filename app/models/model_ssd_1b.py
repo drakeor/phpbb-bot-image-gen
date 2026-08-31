@@ -6,6 +6,7 @@ from PIL import Image
 
 from app.schemas import ImageRequest
 from app.settings import Settings
+from app.sizing import MEGAPIXEL_BUCKETS
 
 
 class SSD1BModel:
@@ -19,6 +20,9 @@ class SSD1BModel:
     default_negative_prompt = (
         "ugly, blurry, low quality, distorted, deformed, watermark, text, signature"
     )
+
+    # SSD-1B is an SDXL distillation and carries the SDXL aspect bucket set.
+    size_buckets = MEGAPIXEL_BUCKETS
 
     def __init__(self) -> None:
         self.pipe = None

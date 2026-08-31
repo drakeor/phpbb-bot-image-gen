@@ -6,6 +6,7 @@ from PIL import Image
 
 from app.schemas import ImageRequest
 from app.settings import Settings
+from app.sizing import MEGAPIXEL_BUCKETS
 
 
 class FluxSchnellModel:
@@ -17,6 +18,10 @@ class FluxSchnellModel:
     default_steps = 4
     default_guidance_scale = 0.0
     max_sequence_length = 256
+
+    # FLUX schnell runs from 0.2 to 2 megapixels. This set holds the 1 megapixel
+    # entries, and a wider list can replace it here without touching the others.
+    size_buckets = MEGAPIXEL_BUCKETS
 
     def __init__(self) -> None:
         self.pipe = None

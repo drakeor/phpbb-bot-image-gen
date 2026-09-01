@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 class ImageModel(Protocol):
     alias: str
     model_id: str
+    size_buckets: dict[str, list[tuple[int, int]]]
 
     def prefetch(self, settings: Settings) -> None:
         ...

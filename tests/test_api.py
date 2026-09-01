@@ -11,6 +11,7 @@ from app import api
 class FakeModel:
     alias = "fake"
     model_id = "fake/model"
+    size_buckets: dict[str, list[tuple[int, int]]] = {}
 
     def __init__(self) -> None:
         self.started = False
@@ -40,6 +41,9 @@ class FakeModel:
 
 def _client(monkeypatch, api_key: str = "secret"):
     monkeypatch.setenv("SD_API_KEY", api_key)
+    # These tests assert the phpBB contract, so the random size and filter gates
+    # stay off and the fake model's 8x8 image reaches the encoder untouched.
+    monkeypatch.setenv("SD_VARIATION_ENABLED", "0")
     fake = FakeModel()
     monkeypatch.setattr(api, "create_model", lambda alias: fake)
     return TestClient(api.app), fake
@@ -166,6 +170,7 @@ def test_gpu_oom_returns_503(monkeypatch):
 
 def test_generation_does_not_block_health(monkeypatch):
     monkeypatch.setenv("SD_API_KEY", "secret")
+    monkeypatch.setenv("SD_VARIATION_ENABLED", "0")
     fake = FakeModel()
     fake.delay = 0.3
     monkeypatch.setattr(api, "create_model", lambda alias: fake)

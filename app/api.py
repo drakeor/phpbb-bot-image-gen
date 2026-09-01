@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 
+from app import postprocess, sizing
 from app.model_registry import ImageModel, create_model
 from app.schemas import ImageRequest, ImageResponse
 from app.settings import Settings
@@ -93,6 +94,8 @@ async def create_image(
     if active_model is None:
         raise HTTPException(status_code=503, detail="Model is not ready")
 
+    settings: Settings = request.app.state.settings
+
     async with generation_lock:
         t0 = time.perf_counter()
         logger.info(
@@ -105,9 +108,13 @@ async def create_image(
             req.guidance_scale,
         )
         data = []
+        sizes: list[str] = []
         try:
             for _ in range(req.n):
-                image = await asyncio.to_thread(active_model.generate, req)
+                image_req = sizing.resolve_size(req, active_model, settings)
+                image = await asyncio.to_thread(active_model.generate, image_req)
+                image = await asyncio.to_thread(postprocess.apply, image, settings)
+                sizes.append(f"{image.width}x{image.height}")
                 data.append({"b64_json": _encode_png(image)})
         except Exception as exc:
             if _is_gpu_oom(exc):
@@ -125,7 +132,12 @@ async def create_image(
             ) from exc
 
         elapsed = time.perf_counter() - t0
-        logger.info("Completed %d image(s) in %.2f seconds", req.n, elapsed)
+        logger.info(
+            "Completed %d image(s) in %.2f seconds (sizes: %s)",
+            req.n,
+            elapsed,
+            ", ".join(sizes),
+        )
 
     return {"created": int(time.time()), "data": data}
 

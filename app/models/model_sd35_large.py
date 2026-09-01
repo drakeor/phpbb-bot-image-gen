@@ -6,6 +6,7 @@ from PIL import Image
 
 from app.schemas import ImageRequest
 from app.settings import Settings
+from app.sizing import MEGAPIXEL_BUCKETS
 
 
 class SD35LargeModel:
@@ -16,6 +17,10 @@ class SD35LargeModel:
     default_height = 1024
     default_steps = 30
     default_guidance_scale = 7.5
+
+    # Trained multi-aspect near 1 megapixel with a 16-channel VAE. Every entry
+    # aligns to 16 and to 64, so this set covers both requirements.
+    size_buckets = MEGAPIXEL_BUCKETS
 
     def __init__(self) -> None:
         self.pipe = None

@@ -75,3 +75,77 @@ DOCKER_BUILDKIT=1 docker build -t phpbb-image-service:sd35-large \
 ```
 
 Runtime can still receive `HF_TOKEN`, `SD_FORCE_DOWNLOAD=true`, and `SD_LOCAL_FILES_ONLY=false` for repair or troubleshooting.
+
+### CUDA Error 803 in Containers
+
+If PyTorch reports:
+
+```text
+Error 803: system has unsupported display driver / cuda driver combination
+```
+
+check which `libcuda.so` is being loaded:
+
+```bash
+python - <<'PY'
+import ctypes
+ctypes.CDLL("libcuda.so.1")
+
+with open("/proc/self/maps") as f:
+    for line in f:
+        if "libcuda" in line:
+            print(line.strip())
+            break
+PY
+```
+
+If it resolves to a container CUDA compatibility library such as:
+
+```text
+/usr/local/cuda-12.8/compat/libcuda.so...
+```
+
+instead of the host-injected NVIDIA driver under:
+
+```text
+/usr/lib/x86_64-linux-gnu/
+```
+
+prepend the host driver directory:
+
+```bash
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+```
+
+Then verify:
+
+```bash
+python -c 'import torch; print(torch.cuda.is_available())'
+```
+
+This can occur when the container's CUDA compatibility `libcuda.so` is newer than the host NVIDIA driver.
+
+## Running manually
+
+```python app/main.py```
+
+Local tests
+
+```bash
+set -euo pipefail
+set -a
+. ./.env
+set +a
+
+curl -sS -m 600 \
+  -o flux2-klein-response.json \
+  -w '%{http_code}\n' \
+  -H "x-api-key: $SD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"a cat holding a sign that says no","width":1024,"height":1024,"steps":4,"guidance_scale":1.0}' \
+  http://127.0.0.1:8005/v1/images/generations
+
+jq -e '.data[0].b64_json | strings | length > 0' flux2-klein-response.json >/dev/null
+jq -r '.data[0].b64_json' flux2-klein-response.json | base64 -d > flux2-klein.png
+file flux2-klein.png
+```

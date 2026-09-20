@@ -12,6 +12,7 @@ def test_known_aliases_are_registered():
         "sd35-large": "app.models.model_sd35_large",
         "ssd-1b": "app.models.model_ssd_1b",
         "flux-schnell": "app.models.model_flux_schnell",
+        "flux2-klein": "app.models.model_flux2_klein",
     }
 
 
